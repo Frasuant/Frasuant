@@ -299,8 +299,29 @@ function drawWeapon(c,def,rec,t){
 /* ---------------- game state ---------------- */
 const cv=$('game'),ctx=cv.getContext('2d');
 let vw=0,vh=0,DPR=1;
-function resize(){DPR=Math.min(window.devicePixelRatio||1,1.5);vw=window.innerWidth;vh=window.innerHeight;cv.width=vw*DPR;cv.height=vh*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
-window.addEventListener('resize',resize);resize();
+// Global scale tracking variable used by your camera drawing function
+let sc = 1; 
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+  vw = window.innerWidth;
+  vh = window.innerHeight;
+  
+  cv.width = vw * DPR;
+  cv.height = vh * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  // 1. Calculate the base scale so the game fits the container safely
+  // (MW = Map Width, TS = Tile Size from your engine configurations)
+  sc = Math.min(vw / (MW * TS), vh / (MH * TS));
+
+  // 2. If the user is on a mobile phone, apply an extra 1.4x (40%) camera zoom!
+  if (vw <= 820 || vh <= 540) {
+    sc = sc * 1.4;
+  }
+}
+window.addEventListener('resize', resize);
+resize();
 
 let scene='menu';
 let grid=[],crates={},baseCv=null,bushCv=null;
