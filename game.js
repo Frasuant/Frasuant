@@ -310,15 +310,6 @@ function resize(){
   cv.width = vw * DPR;
   cv.height = vh * DPR;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-
-  // 1. Calculate the base scale so the game fits the container safely
-  // (MW = Map Width, TS = Tile Size from your engine configurations)
-  sc = Math.min(vw / (MW * TS), vh / (MH * TS));
-
-  // 2. If the user is on a mobile phone, apply an extra 1.4x (40%) camera zoom!
-  if (vw <= 820 || vh <= 540) {
-    sc = sc * 1.4;
-  }
 }
 window.addEventListener('resize', resize);
 resize();
@@ -693,8 +684,18 @@ function render(){
   const p=units[0];
   ctx.fillStyle='#10101e';ctx.fillRect(0,0,vw,vh);
   const shx=cam.shake?rand(-cam.shake,cam.shake):0,shy=cam.shake?rand(-cam.shake,cam.shake):0;
-  const ox=vw/2-cam.x+shx,oy=vh/2-cam.y+shy;
-  ctx.save();ctx.translate(ox,oy);
+  
+  // 1. Check if the device width is mobile sized
+  const isMobile = (window.innerWidth <= 820);
+  const zoomFactor = isMobile ? 1.4 : 1.0; // 1.4x zoom for mobile, 1.0x (normal) for desktop
+
+  // 2. Adjust the center points to accommodate the new zoom scaling
+  const ox=vw/2 - cam.x * zoomFactor + shx;
+  const oy=vh/2 - cam.y * zoomFactor + shy;
+  
+  ctx.save();
+  ctx.translate(ox,oy);
+  ctx.scale(zoomFactor, zoomFactor); // 3. Magnify the battlefield!
   ctx.drawImage(baseCv,0,0);
   // football pitch + goals
   if(mode==='football'){
