@@ -525,6 +525,7 @@ let plazaEntities = { shop: null, factory: null, houses: [] };
 let plazaShopActive = false;
 let pizzaJob = { active: false, timer: 0 };
 let pizzasDelivered = 0;
+let pizzaDeliveryAnims = [];
 
 function renderMapLayers(i,g){
   const th=MAPS[i].theme,rng=mulberry(1234+i*777);
@@ -1271,6 +1272,11 @@ function update(dt){
                       pizzasDelivered++;
                       burst(h.x, h.y, 20, '#ffba08', 250, 4);
                       beep(880, 0.1, 'triangle', 0.05, 300);
+                      const cheerAudio = new Audio('Cheer.mp3');
+                      cheerAudio.volume = save.volume;
+                      cheerAudio.play().catch(()=>{});
+                      const randChar = BRAWLERS[Math.floor(Math.random() * BRAWLERS.length)];
+                      pizzaDeliveryAnims.push({x: h.x, y: h.y, def: randChar, t: 0, life: 2.5});
                       if (pizzasDelivered >= 3) {
                           pizzaJob.active = false;
                           save.plazaCoins = (save.plazaCoins || 0) + 150;
@@ -1362,6 +1368,12 @@ function update(dt){
     }
   }
   
+  if(mode==='plaza') {
+      for(let i=pizzaDeliveryAnims.length-1;i>=0;i--) {
+          pizzaDeliveryAnims[i].t += dt;
+          if(pizzaDeliveryAnims[i].t >= pizzaDeliveryAnims[i].life) pizzaDeliveryAnims.splice(i,1);
+      }
+  }
   if(mode==='gemgrab')updateGems(dt);
   if(mode==='football')updateBall(dt);
   updateProjs(dt);updateTurrets(dt);updateStorms(dt);
@@ -1691,6 +1703,23 @@ function render(){
            ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
         }
     });
+    for(let i=0;i<pizzaDeliveryAnims.length;i++) {
+        const anim = pizzaDeliveryAnims[i];
+        const prog = anim.t / anim.life;
+        const alpha = prog < 0.8 ? 1 : (1 - (prog - 0.8) / 0.2);
+        const scale = 1 + Math.sin(anim.t * 8) * 0.15;
+        const yOff = -Math.sin(prog * Math.PI) * 40;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(anim.x, anim.y + yOff);
+        ctx.scale(scale, scale);
+        drawBrawler(ctx, anim.def, {x: 0, y: 0, s: 1.2, aim: -0.3, t: time, moving: false});
+        ctx.restore();
+        ctx.fillStyle = '#ffff00';
+        ctx.font = 'bold 28px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('😊', anim.x, anim.y + yOff - 60);
+    }
   }
 
   const sorted=units.slice().sort((a,b)=>a.y-b.y);
